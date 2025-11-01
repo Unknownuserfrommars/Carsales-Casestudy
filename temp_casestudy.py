@@ -5,9 +5,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 from streamlit_option_menu import option_menu as om
 import plotly.io as pio
-
+import math
 from scipy import stats
-from pandas.api.types import is_categorical_dtype, is_bool_dtype, is_numeric_dtype, is_object_dtype
+# from pandas.api.types import is_categorical_dtype, is_bool_dtype, is_numeric_dtype, is_object_dtype
+
 pio.renderers.default = 'browser'
 st.set_page_config(layout="wide")
 pcq = px.colors.qualitative
@@ -29,7 +30,7 @@ bmw['price_per_litre'] = bmw['price_usd'] / bmw['engine_size_l']
 # Price_per_100KM = Price_USD / (Mileage_KM/100)
 bmw['price_per_100km'] = bmw['price_usd'] / (bmw['mileage_km']/100)
 # Price_per_1kKM = Price_USD / (Mileage_KM/1000)
-bmw['price_per_1kkm'] = bmw['price_usd'] / (bmw['mileage_km']/1000)
+# bmw['price_per_1kkm'] = bmw['price_usd'] / (bmw['mileage_km']/1000)
 
 # from sklearn.naive_bayes import GaussianNB
 # model = GaussianNB()
@@ -56,7 +57,7 @@ num_dict = {
     "mileage_per_year":"Mileage per Year (Km)",
     "price_per_litre":"Price per Litre ($/L)",
     "price_per_100km":"Price per 100 Km ($/100Km)",
-    "price_per_1kkm":"Price per 1,000 Km ($/1,000Km)",
+    #"price_per_1kkm":"Price per 1,000 Km ($/1,000Km)",
     }
 
 all_dict = num_dict.copy()
@@ -236,7 +237,7 @@ all_cols = list(num_dict.keys()) + list(cat_dict.keys())
 with st.sidebar:
     s = om(
         menu_title = 'The Great Navigation Pane of All Time',
-        options = ['Abstract', 'Background Information', 'Data Cleaning','Exploratory', 'Analysis Section', 'ph3', 'ph4', 'ph5', 'Conclusion', 'Bibliography'],
+        options = ['Abstract', 'Background Information', 'Data Cleaning','Exploratory', 'Naive Bayes Prediction', 'Analysis', 'ph4', 'ph5', 'Conclusion', 'Bibliography'],
         menu_icon = 'house-door-fill',
         icons = ['person-arms-up', 'basket', 'filetype-csv', 'search', 'microsoft-teams', 'key-fill', 'trophy-fill', 'flag', 'star-fill', 'list-ol'],
         default_index = 0,
@@ -565,6 +566,12 @@ if s == 'Exploratory':
     
     st.header("Chi-sq")
     col19, col20 = st.columns([2,3])
+    with st.expander("See explanation on Chi-sq test"):
+        st.text("""
+                The Chi-squared test is a statistical method used to determine if there is a significant association between two categorical variables. It compares the observed frequencies in each category of a contingency table to the frequencies that would be expected if there were no association between the variables.   
+                The test calculates a Chi-squared statistic, which measures the discrepancy between the observed and expected frequencies. A higher Chi-squared value indicates a greater difference between observed and expected frequencies, suggesting a stronger association between the variables.
+                The p-value associated with the Chi-squared statistic helps determine the statistical significance of the results. A low p-value (typically less than 0.05) indicates that the observed association is unlikely to have occurred by chance, leading to the rejection of the null hypothesis of independence between the variables.
+        """)
     with st.form("Chi-sq"):
         predictor = col19.multiselect("Select some categorical predictors", np.setdiff1d(list(cat_dict.values()), ["Sales Volume Level"]), default=["Car Model", "Color"], key=26)
         target = "Sales Volume Level"
@@ -580,6 +587,8 @@ if s == 'Exploratory':
                 for col in predictor_d:
                     contingency_table = pd.crosstab(bmw[col], bmw[target_d])
                     chi2, pval, dof, ex = stats.chi2_contingency(contingency_table)
+                    #chi2_fmt = np.where(chi2 < 0.005, f"{chi2:.2e}", f"{chi2:.2f}")
+                    #pval_fmt = np.where(pval < 0.0005, f"{pval:.3e}", f"{pval:.2f}")
                     chi2_results.append({
                         'Predictor': all_dict[col],
                         'Chi2 Statistic': chi2,
@@ -587,100 +596,384 @@ if s == 'Exploratory':
                         'Degrees of Freedom': dof
                     })
                 chi2_df = pd.DataFrame(chi2_results).sort_values(by='Chi2 Statistic', ascending=False)
-                col20.dataframe(chi2_df.style.format({'Chi2 Statistic': '{:.4f}', 'p-value': '{:.4e}'}), use_container_width=True)
-
-                fig_chi2 = px.bar(chi2_df, x='Predictor', y='Chi2 Statistic', log_y=logy_scale, title='Chi-squared Statistics for Categorical Predictors', labels={'Chi2 Statistic': 'Chi-squared Statistic', 'Predictor': 'Categorical Predictor'}, hover_data={'p-value': ':.4e', 'Degrees of Freedom': True})
-                fig_chi2.update_traces(marker_line_width=1)
+                chi2_df['Chi2 Statistic'] = chi2_df['Chi2 Statistic'].apply(lambda x: np.where(x < 0.005, f"{x:.2e}", f"{x:.2f}"))
+                chi2_df['p-value'] = chi2_df['p-value'].apply(lambda x:np.where(x < 0.0005, f"{x:.3e}", f"{x:.2f}"))
+                col19.dataframe(chi2_df, use_container_width=True)
+                #col19.dataframe(chi2_results, use_container_width=True)
+                fig_chi2 = px.bar(chi2_df, x='Predictor', y='Chi2 Statistic', log_y=logy_scale, title='Chi-squared Statistics for Categorical Predictors', labels={'Chi2 Statistic': 'Chi-squared Statistic', 'Predictor': 'Categorical Predictor'}, hover_data={'p-value': ':.4e', 'Degrees of Freedom': True}, text_auto='.1f')
+                fig_chi2.update_traces(marker_line_width=1, textposition='outside')
                 col20.plotly_chart(fig_chi2)
-        with st.expander("See explanation on Chi-sq test"):
-            st.text("""
-                    The Chi-squared test is a statistical method used to determine if there is a significant association between two categorical variables. It compares the observed frequencies in each category of a contingency table to the frequencies that would be expected if there were no association between the variables.
-                    
-                    The test calculates a Chi-squared statistic, which measures the discrepancy between the observed and expected frequencies. A higher Chi-squared value indicates a greater difference between observed and expected frequencies, suggesting a stronger association between the variables.
+    
 
-                    The p-value associated with the Chi-squared statistic helps determine the statistical significance of the results. A low p-value (typically less than 0.05) indicates that the observed association is unlikely to have occurred by chance, leading to the rejection of the null hypothesis of independence between the variables.
-                    """)
+
+    st.header("Chi-sq 2")
+    # col21, col22 = st.columns([2,3])
+    with st.form("chi2-simple-form"):
+        c1_pretty = st.selectbox("Categorical variable 1", cat_dict.values(), key="chi2_cat1")
+        c2_pretty = st.selectbox("Categorical variable 2", np.setdiff1d(list(cat_dict.values()), [c1_pretty]), key="chi2_cat2")
+        submitted = st.form_submit_button("Run Chi-square")
+        c1 = [k for k, v in cat_dict.items() if v == c1_pretty][0]
+        c2 = [k for k, v in cat_dict.items() if v == c2_pretty][0]
+        if submitted:        
+            # guardrails (columns exist & are categorical-like)
+            # if c1 not in bmw.columns or c2 not in bmw.columns:
+            #     st.error("One or both selected columns are missing from `bmw`.")
+            # else:
+            ct = pd.crosstab(bmw[c1], bmw[c2])
+            # try:
+            chi2, p, dof, expected = stats.chi2_contingency(ct)
+            # except ValueError as e:
+            #     st.error(f"Chi-square failed: {e}")
+            # else:
+                # tiny 2-row dataframe with just chi-square and p-value
+            # result_df = pd.DataFrame(
+            #     {"metric": ["Chi-square", "p-value"],
+            #     "value":  [chi2, p]}
+            # )
+            chi2_fmt = np.where(chi2 < 0.005, f"{chi2:.2e}", f"{chi2:.2f}")
+            p_fmt = np.where(p < 0.0005, f"{p:.3e}", f"{p:.2f}")
+            result_df = pd.DataFrame({'Chi-square Value':[chi2_fmt], 'P-Value':[p_fmt]})  # TODO: FIgure out how to format these to maybe like .2f or .2e like it depends.
+            st.write(f"{c1_pretty} VS {c2_pretty}")
+            st.dataframe(result_df)
 
 # ------
-if s == 'Analysis Section':
-    st.title('Analysis Section')
+if s == 'Naive Bayes Prediction':
+    st.title('Naive Bayes Prediction')
     st.text("In this section, we will perform a Naive Bayes classification to predict the 'Sales Volume Level' based on other features in the dataset.")
-    st.subheader("Custom Naive Bayes Classifier Implementation")
-    st.text("The custom Naive Bayes classifier implemented here can handle both categorical and numerical features. It calculates prior probabilities and likelihoods based on the training data, and then makes predictions on the same dataset for demonstration purposes.")
-    st.markdown("### Code Implementation")
-    st.code("""
-def custom_naive_bayes(df: pd.DataFrame, target: str) -> pd.DataFrame:
-    \"""
-    df: DataFrame that already contains the target column
-    target: string name of the target column
-    Returns: DataFrame with columns [prob_high, prob_low, actual, predicted]
-    \"""
+    with st.expander("See brief info on Naive Bayes Classifier"):
+        st.subheader("Custom Naive Bayes Classifier Implementation")
+        st.text("The custom Naive Bayes classifier implemented here can handle both categorical and numerical features. It calculates prior probabilities and likelihoods based on the training data, and then makes predictions on the same dataset for demonstration purposes.")
+        st.markdown("### Code Implementation")
+        st.code("""
+    class NullPointerException(ValueError):
+        pass
+    def custom_naive_bayes(df: pd.DataFrame, target: str) -> pd.DataFrame:
+        \"""
+        df: DataFrame that already contains the target column
+        target: string name of the target column
+        Returns: DataFrame with columns [prob_high, prob_low, actual, predicted]
+        \"""
 
-    # Assert if DataFrame has NaN values
-    assert df.isna().sum(axis=0).sum() == 0, "DataFrame contains NaN values. Please handle them before passing to this function."
+        # Assert if DataFrame has NaN values
+        assert df.isna().sum(axis=0).sum() == 0, "DataFrame contains NaN values. Please handle them before passing to this function."
 
-    # Step 1
-    y = df[target]
-    X = df.drop(columns=[target])
-    cat_vars = []
-    num_vars = []
+        # Step 1
+        y = df[target]
+        X = df.drop(columns=[target])
+        cat_vars = []
+        num_vars = []
 
-    cat_vars = X.select_dtypes(include=['object']).columns
-    num_vars = X.select_dtypes(include=np.number).columns
+        cat_vars = X.select_dtypes(include=['object']).columns
+        num_vars = X.select_dtypes(include=np.number).columns
 
-    # Step 2 - sorting the high and low dataframes
-    df_high = df[df[target] == "High"]
-    df_low  = df[df[target] == "Low"]
+        # Step 2 - sorting the high and low dataframes
+        df_high = df[df[target] == "High"]
+        df_low  = df[df[target] == "Low"]
 
-    # Step 3 - calculating the priors
-    prior_high = len(df_high) / len(df)
-    prior_low  = len(df_low)  / len(df)
-    
-    # Step 4
-    prob_high, prob_low = {}, {}
+        # Step 3 - calculating the priors
+        prior_high = len(df_high) / len(df)
+        prior_low  = len(df_low)  / len(df)
+        
+        # Step 4
+        prob_high, prob_low = {}, {}
 
-    # Step 5
-    for col in X.columns:
-        if col in cat_vars:
-            vals_high = df_high[col].value_counts(normalize=True)
-            vals_low  = df_low[col].value_counts(normalize=True)
-            V = len(df[col].unique())
-            # high_dict[col] = (vals_high + 1) / (len(df_high) + V)
-            # low_dict[col]  = (vals_low  + 1) / (len(df_low)  + V)
-            prob_high[col] = df[col].map(vals_high).fillna(1e-8).astype(float)
-            prob_low[col]  = df[col].map(vals_low).fillna(1e-8).astype(float)
-        elif col in num_vars:
-            # vals_high[col] = (df_high[col].mean(), df_high[col].std(ddof=0))
-            # vals_low[col] = (df_low[col].mean(),  df_low[col].std(ddof=0))
-            hi_mean = df_high[col].mean()
-            hi_std  = df_high[col].std(ddof=0)
-            lo_mean = df_low[col].mean()
-            lo_std  = df_low[col].std(ddof=0)
-            vals_high = stats.norm(hi_mean, hi_std)
-            vals_low  = stats.norm(lo_mean, lo_std)
-            prob_high[col] = vals_high.pdf(df[col])
-            prob_low[col]  = vals_low.pdf(df[col])
-        else:
-            raise NullPointerException(f"Column '{col}' is neither categorical nor numeric. An error occured.")
+        # Step 5
+        for col in X.columns:
+            if col in cat_vars:
+                vals_high = df_high[col].value_counts(normalize=True)
+                vals_low  = df_low[col].value_counts(normalize=True)
+                V = len(df[col].unique())
+                prob_high[col] = df[col].map(vals_high).fillna(1e-8).astype(float)
+                prob_low[col]  = df[col].map(vals_low).fillna(1e-8).astype(float)
+            elif col in num_vars:
+                hi_mean = df_high[col].mean()
+                hi_std  = df_high[col].std(ddof=0)
+                lo_mean = df_low[col].mean()
+                lo_std  = df_low[col].std(ddof=0)
+                vals_high = stats.norm(hi_mean, hi_std)
+                vals_low  = stats.norm(lo_mean, lo_std)
+                prob_high[col] = vals_high.pdf(df[col])
+                prob_low[col]  = vals_low.pdf(df[col])
+            else:
+                raise NullPointerException(f"Column '{col}' is neither categorical nor numeric. An error occured.")
 
-    df_high = pd.DataFrame(prob_high).prod(axis=1) * prior_high
-    df_low  = pd.DataFrame(prob_low).prod(axis=1) * prior_low
+        df_high = pd.DataFrame(prob_high).prod(axis=1) * prior_high
+        df_low  = pd.DataFrame(prob_low).prod(axis=1) * prior_low
 
-    preds = np.where(df_high > df_low, "High", "Low")
+        preds = np.where(df_high > df_low, "High", "Low")
 
-    # Step 6
+        # Step 6
 
-    out = pd.DataFrame({
-        "prob_high": df_high.map(lambda v: f'{v:2e}'),
-        "prob_low": df_low.map(lambda v: f'{v:2e}'),
-        "actual": y,
-        "predicted": preds,
-    })
+        out = pd.DataFrame({
+            "prob_high": df_high.map(lambda v: f'{v:2e}'),
+            "prob_low": df_low.map(lambda v: f'{v:2e}'),
+            "actual": y,
+            "predicted": preds,
+        })
 
-    accuracy = np.mean(out["actual"] == out["predicted"])
+        accuracy = np.mean(out["actual"] == out["predicted"])
 
-    return out, accuracy
-    """, language='python')
-    st.text("The above code defines a custom Naive Bayes classifier that processes both categorical and numerical features. It calculates the prior probabilities and likelihoods, then makes predictions based on these calculations.")
-    
+        return out, accuracy
+        """, language='python')
+        st.text("The above code defines a custom Naive Bayes classifier that processes both categorical and numerical features. It calculates the prior probabilities and likelihoods, then makes predictions based on these calculations.")
+    # def facet_box_numeric_vs_target(df:pd.DataFrame, numeric_cols:list, target:str='Sales Classification', wrap:int=3, bins_if_numeric_target:int=4, column_to_put_chart=None):
+    # # If the target is numeric, bin it so box plots make sense
+    #     if np.issubdtype(df[target].dtype, np.number):
+    #         labels = [f"Q{i+1}" for i in range(bins_if_numeric_target)]
+    #         try:
+    #             df["_target_cat_"] = pd.qcut(df[target], q=bins_if_numeric_target, labels=labels, duplicates="drop")
+    #         except Exception:
+    #             df["_target_cat_"] = pd.cut(df[target], bins=bins_if_numeric_target, labels=labels)
+    #         target_cat = "_target_cat_"
+    #     else:
+    #         target_cat = target
+    #     if not numeric_cols:
+    #         st.info("No numeric predictors to facet.")
+    #         return
+
+    #     melted = df[numeric_cols + [target_cat]].melt(id_vars=target_cat, var_name="feature", value_name="value")
+    #     melted = melted.replace([np.inf, -np.inf], np.nan).dropna(subset=["value"])
+
+    #     n_panels = melted["feature"].nunique()
+    #     rows = math.ceil(n_panels / wrap)
+
+    #     fig = px.box(
+    #         melted,
+    #         x=target_cat, y="value",
+    #         facet_col="feature", facet_col_wrap=wrap,  # ← THIS is the facet
+    #         points="outliers",
+    #         title="Facet box plots: numeric predictors vs target"
+    #     )
+    #     fig.update_layout(height=max(520, rows*320), margin=dict(t=60, b=30))
+    #     if column_to_put_chart:
+    #         column_to_put_chart.plotly_chart(fig, use_container_width=True)
+    #     else:
+    #         st.plotly_chart(fig, use_container_width=True)
+    # col_nb_1, col_nb_2 = st.columns([2,3])
+
+    # def fit_distribution(data):
+    #     mu = np.mean(data)
+    #     sigma = np.std(data)
+    #     return stats.norm(mu, sigma)
+
+    # def sales_predict(df, target_col='sales_classification'):
+    #     # expects labels 'High' and 'Low'
+    #     high = df[df[target_col] == 'High'].copy()
+    #     low  = df[df[target_col] == 'Low'].copy()
+
+    #     priors = df[target_col].value_counts(normalize=True)
+    #     h_prior = priors.get('High', 0.0)
+    #     l_prior = priors.get('Low',  0.0)
+
+    #     p_h, p_l = {}, {}
+    #     for col in df.columns:
+    #         if col == target_col:
+    #             continue
+
+    #         # categorical: normalized value_counts (no Laplace)
+    #         if df[col].dtype == 'object' or str(df[col].dtype) == 'category':
+    #             h_con = dict(high[col].value_counts(normalize=True))
+    #             l_con = dict(low[col].value_counts(normalize=True))
+    #             p_h[col] = df[col].map(h_con)
+    #             p_l[col] = df[col].map(l_con)
+
+    #         # numeric: Gaussian pdf (Harry’s approach)
+    #         elif str(df[col].dtype) == 'float64':
+    #             p_h[col] = fit_distribution(high[col]).pdf(df[col])
+    #             p_l[col] = fit_distribution(low[col]).pdf(df[col])
+
+    #         # (optional) treat ints as numeric too:
+    #         # elif np.issubdtype(df[col].dtype, np.number):
+    #         #     p_h[col] = fit_distribution(high[col].astype(float)).pdf(df[col].astype(float))
+    #         #     p_l[col] = fit_distribution(low[col].astype(float)).pdf(df[col].astype(float))
+
+    #     final_h = pd.DataFrame(p_h).prod(axis=1) * h_prior
+    #     final_l = pd.DataFrame(p_l).prod(axis=1) * l_prior
+
+    #     predicted = (final_h > final_l).map({True: 'High', False: 'Low'})
+    #     final = pd.concat([predicted, df[target_col]], axis=1)
+    #     final.columns = ['Predicted', 'Actual']
+    #     acc = (final['Predicted'] == final['Actual']).mean()
+
+    #     out = pd.concat(
+    #         [final,
+    #         final_h.rename('P(High)'),
+    #         final_l.rename('P(Low)')],
+    #         axis=1
+    #     )
+    #     return out, float(acc)
+    with st.expander("See information on the Naive Bayes Classifier:"):
+        st.text("""
+The Naive Bayes classifier is a simple but powerful method used to make predictions based on probabilities. It is most commonly applied in text classification tasks, such as detecting spam emails or identifying the sentiment of a review. The central idea is to use evidence, or features, to estimate how likely something belongs to a particular category.
+
+The “Bayes” part of the name comes from Bayes' Theorem, a rule in probability that allows us to update our beliefs when we see new evidence. In a spam detection example, the model asks: if an email contains the word “free,” how likely is it that the email is spam? It combines the likelihood of each word with the overall chance that any email is spam, producing a final probability for whether a specific email is spam or not.
+
+The “naive” part refers to an important assumption the model makes: that every piece of evidence, or feature, is independent of the others. In other words, it assumes that the presence of one word in an email has nothing to do with another word. In reality, this is rarely true—words like “winner” and “prize” often appear together—but even with this oversimplified assumption, the method tends to perform surprisingly well.
+
+Because of its simplicity, Naive Bayes is extremely fast to train and works well even with relatively small datasets. It often serves as a reliable baseline model before using more complex algorithms. In essence, Naive Bayes acts like a very straightforward reasoning process: it looks at each clue, measures how strongly it supports one category over another, and combines those pieces of evidence to make a final, probabilistic decision.
+                """)
+    st.header("Accuracy test")
+    with st.form("Accuracy"):
+        # --- multiselects show PRETTY names ---
+        # exclude the target's pretty name ("Sales Volume Level") from categorical options
+        all_pretty_opts = np.setdiff1d(list(all_dict.values()), ['Sales Volume Level'])
+        all_ms = st.multiselect("Predictors", all_pretty_opts, key=4001)
+
+        # PRETTY -> DIRTY using your list-comprehension style
+        preds = [k for k, v in all_dict.items() if v in all_ms]
+
+        submitted = st.form_submit_button("Submit to view predictions and accuracy")
+
+        if submitted:
+            output, accuracy = custom_naive_bayes(bmw[preds + ['sales_classification']], target='sales_classification')
+            output_clean = output.copy()
+            # TODO: Change the prob_high and prob_low column values to .2e or .3e (depends) and do it in one line of code using .map and the lambda function.
+            # TODO: Make the column names to more user-friendly names so that they are more nicer like the prediction and actual. for probs dont do abbreviations
+            st.dataframe(output, use_container_width=True)
+            st.write(f"The accuracy of this prediction is: {accuracy:.3f}")
+            # if len(predictors) == 0:
+            #     st.warning("Select at least one predictor.")
+            # elif 'sales_classification' not in bmw.columns:
+            #     st.error("Column 'sales_classification' not found in `bmw`.")
+            # else:
+            #     use_cols = predictors + ['sales_classification']
+            #     df_in = bmw[use_cols].dropna().copy()
+
+            #     predicted, acc = sales_predict(df_in, target_col='sales_classification')
+            #     st.markdown(f"**Accuracy:** `{acc:.4f}`")
+            #     st.dataframe(predicted)
+
+            #     # ---------- Chi-square (categorical only) ----------
+            #     st.subheader("Chi-square (categorical predictors vs sales_classification)")
+            #     cat_X = [c for c in predictors if str(bmw[c].dtype) in ('object','category')]
+            #     if cat_X:
+            #         rows = []
+            #         for col in cat_X:
+            #             ct = pd.crosstab(bmw[col], bmw['sales_classification'])
+            #             #try:
+            #             chi2, p, dof, _ = stats.chi2_contingency(ct)
+            #             # show pretty name if available
+            #             pretty_name = cat_dict.get(col, col)
+            #             rows.append({"Predictor": pretty_name, "Chi2": chi2, "dof": dof, "p-value": p})
+            #             # except ValueError:
+            #             #     rows.append({"Predictor": cat_dict.get(col, col), "Chi2": np.nan, "dof": np.nan, "p-value": np.nan})
+            #         st.dataframe(pd.DataFrame(rows).sort_values("p-value", na_position="last"))
+            #     else:
+            #         st.info("No categorical predictors selected.")
+
+            #     # ---------- Plotly Express facet box (numeric vs target) ----------
+            #     st.subheader("Facet box plot (numeric predictors vs sales_classification)")
+            #     num_X = [c for c in predictors if c not in cat_X]
+            #     if num_X:
+            #         melt_cols = num_X + ['sales_classification']
+            #         long_df = bmw[melt_cols].dropna().melt(
+            #             id_vars='sales_classification',
+            #             value_vars=num_X,
+            #             var_name='predictor_dirty',
+            #             value_name='Value'
+            #         )
+            #         # replace dirty with PRETTY in the facet labels
+            #         pretty_map_num = {k: v for k, v in num_dict.items() if k in num_X}
+            #         long_df['Predictor'] = long_df['predictor_dirty'].map(lambda k: pretty_map_num.get(k, k))
+
+            #         fig = px.box(
+            #             long_df,
+            #             x='sales_classification',
+            #             y='Value',
+            #             facet_col='Predictor',
+            #             facet_col_wrap=3,
+            #             points='outliers',
+            #             title='Numeric predictors by sales_classification'
+            #         )
+            #         fig.update_layout(height=350 * int(np.ceil(len(long_df['Predictor'].unique()) / 3)))
+            #         st.plotly_chart(fig, use_container_width=True)
+            #     else:
+            #         st.info("No numeric predictors selected.")
+
+    with st.expander("View the function"):
+        # st.code(fit_distribution, language='python')
+        # st.code(profit_predict, language='python')
+        st.text("No actual information yet. Still under construction. Come back later for more information.")
+
+if s == "Analysis":
+    st.header("The analysis Section")
+
+    mileage_feats = pd.Series(["mileage_km", "mileage_per_year", "price_per_100km"]).replace(all_dict).apply(lambda text:"<b>"+text+"</b>")
+    st.subheader("Facet")
+    bmw_melted = bmw.melt(
+        id_vars='sales_classification',
+        value_vars=list(num_dict.keys()),
+        var_name='Features'
+    )
+    bmw_melted['Features'] = bmw_melted['Features'].replace(all_dict).apply(lambda text:"<b>"+text+"</b>")
+    figure_mf = px.box(bmw_melted[bmw_melted['Features'].isin(mileage_feats)], 'sales_classification', 'value', facet_col='Features', title='Mileage features by Sales Volume Level', color='sales_classification', height=600, facet_col_spacing=0.05, labels=all_dict, log_y=True)
+    figure_mf.update_yaxes(dtick=1)
+    figure_mf.for_each_annotation(lambda x:x.update(text=x.text.split("=")[-1]))
+    st.plotly_chart(figure_mf, use_container_width=True)
+
+    figure_nu = px.box(bmw_melted[~bmw_melted['Features'].isin(mileage_feats)], 'sales_classification', 'value', facet_col='Features', title='Other Numeric features by Sales Volume Level', color='sales_classification', height=600, facet_col_spacing=0.06, labels=all_dict, facet_col_wrap=3, facet_row_spacing=0.09)
+    figure_nu.update_yaxes(showticklabels=True, matches=None)
+    figure_nu.for_each_annotation(lambda x:x.update(text=f"<b>{x.text.split('=')[-1]}</b>", font=dict(size=14, color="black", family="Arial")))
+    st.plotly_chart(figure_nu)
+
+
+    st.subheader("Chi-sq") # TODO: Add all columns to the chi-sqm similar to the "chisq" exploratory graph but you choose all
+    # with st.form("Chi-sq"):
+    #         predictor = col19.multiselect("Select some categorical predictors", np.setdiff1d(list(cat_dict.values()), ["Sales Volume Level"]), default=["Car Model", "Color"], key=26)
+    #         target = "Sales Volume Level"
+    #         predictor_d = [key for key, value in cat_dict.items() if value in predictor]
+    #         target_d = [key for key, value in cat_dict.items() if value == target][0]
+    #         logy_scale = col19.checkbox("Click if you want log y scale", key=27)
+    #         submitted = st.form_submit_button("Click to perform Chi-sq test")
+    #         if submitted:
+    #             if len(predictor_d) < 1:
+    #                 st.warning("Please select at least one categorical predictor to perform Chi-sq test.", icon="⚠️")
+    #             else:
+    #                 chi2_results = []
+    #                 for col in predictor_d:
+    #                     contingency_table = pd.crosstab(bmw[col], bmw[target_d])
+    #                     chi2, pval, dof, ex = stats.chi2_contingency(contingency_table)
+    #                     #chi2_fmt = np.where(chi2 < 0.005, f"{chi2:.2e}", f"{chi2:.2f}")
+    #                     #pval_fmt = np.where(pval < 0.0005, f"{pval:.3e}", f"{pval:.2f}")
+    #                     chi2_results.append({
+    #                         'Predictor': all_dict[col],
+    #                         'Chi2 Statistic': chi2,
+    #                         'p-value': pval,
+    #                         'Degrees of Freedom': dof
+    #                     })
+    #                 chi2_df = pd.DataFrame(chi2_results).sort_values(by='Chi2 Statistic', ascending=False)
+    #                 chi2_df['Chi2 Statistic'] = chi2_df['Chi2 Statistic'].apply(lambda x: np.where(x < 0.005, f"{x:.2e}", f"{x:.2f}"))
+    #                 chi2_df['p-value'] = chi2_df['p-value'].apply(lambda x:np.where(x < 0.0005, f"{x:.3e}", f"{x:.2f}"))
+    #                 col19.dataframe(chi2_df, use_container_width=True)
+    #                 #col19.dataframe(chi2_results, use_container_width=True)
+    #                 fig_chi2 = px.bar(chi2_df, x='Predictor', y='Chi2 Statistic', log_y=logy_scale, title='Chi-squared Statistics for Categorical Predictors', labels={'Chi2 Statistic': 'Chi-squared Statistic', 'Predictor': 'Categorical Predictor'}, hover_data={'p-value': ':.4e', 'Degrees of Freedom': True}, text_auto='.1f')
+    #                 fig_chi2.update_traces(marker_line_width=1, textposition='outside')
+    #                 col20.plotly_chart(fig_chi2)
+    tgt = "sales_classification"
+    preds = list(cat_dict.keys())
+    preds = np.setdiff1d(preds, [tgt])
+    chi2_re = []
+    for col in preds:
+        contingency_table = pd.crosstab(bmw[col], bmw[tgt])
+        chi2, pval, dof, ex = stats.chi2_contingency(contingency_table)
+        chi2_re.append({
+            'Predictor': all_dict[col],
+            'Chi2 Stats': chi2,
+            'p_value': pval,
+            "Degrees of Freedom": dof,
+        })
+    chi2_df = pd.DataFrame(chi2_re).sort_values(by='Chi2 Stats', ascending=False)
+    chi2_df['Chi2 Stats'] = chi2_df['Chi2 Stats'].apply(lambda x: np.where(x < 0.005, f"{x:.2e}", f"{x:.2f}"))
+    chi2_df['p_value'] = chi2_df['p_value'].apply(lambda x:np.where(x < 0.0005, f"{x:.3e}", f"{x:.2f}"))
+    st.dataframe(chi2_df, use_container_width=True)
+    fig_chi2_a = px.bar(chi2_df, x='Predictor', y='Chi2 Stats', title='', labels={'Chi2 Statistic': 'Chi-squared Statistic', 'Predictor': 'Categorical Predictor'}, hover_data={'p_value': ':.4e', 'Degrees of Freedom': True}, text_auto='.1f')
+    st.plotly_chart(fig_chi2_a)
+
+
+    st.subheader("Heatmap of numeric cols corr.") # TODO: Use px.imshow()
+    st.text("This heatmap shows the correlation between the numeric columns so that it prepares us for the later feature selection.")
+    corr_matrix = bmw[np.setdiff1d(list(num_dict.keys()), ['year'])].corr()
+    heatmap = px.imshow(corr_matrix, text_auto='.4f', aspect='auto', color_continuous_scale='RdBu', title='Correlation Heatmap', labels={'x':'Features', 'y':'Features', 'color':'Correlation'})
+    st.plotly_chart(heatmap)
+
 
