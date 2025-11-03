@@ -898,6 +898,9 @@ Because of its simplicity, Naive Bayes is extremely fast to train and works well
 if s == "Analysis":
     st.header("The analysis Section")
 
+    # Here I will write the overall purpose for this analysis section as well as "the general overview of how these results will guide me in feature selection for the NB Classifier"
+    st.text("These analysis plots (Chi-square tests and heatmaps) can let me know about the correlation between the different columns and know what features to and not to select (to avoid some being over-correlated) for my feature selection.")
+
     mileage_feats = pd.Series(["mileage_km", "mileage_per_year", "price_per_100km"]).replace(all_dict).apply(lambda text:"<b>"+text+"</b>")
     st.subheader("Facet")
     bmw_melted = bmw.melt(
@@ -976,4 +979,4 @@ if s == "Analysis":
     heatmap = px.imshow(corr_matrix, text_auto='.4f', aspect='auto', color_continuous_scale='RdBu', title='Correlation Heatmap', labels={'x':'Features', 'y':'Features', 'color':'Correlation'})
     st.plotly_chart(heatmap)
 
-
+    # Show all the steps (each collection of features) and the reason for choosing that particular set of features and the results. EG: Include one of using all the features because none of them are highly correlated but there are also no individually strong predictors.
