@@ -13,7 +13,7 @@ pio.renderers.default = 'browser'
 st.set_page_config(layout="wide")
 pcq = px.colors.qualitative
 
-my_path = "C:\\Users\\Kevin\\OneDrive\\Desktop\\carsalesreport\\archive\\"
+my_path = "" # nah u cant see this :)
 bmw = pd.read_csv(my_path + 'BMW_Car_Sales_Classification.csv')
 
 bmw.columns = bmw.columns.str.lower().str.strip()
@@ -1179,4 +1179,5 @@ if s == "Bibliography":
             
     And one more:
     Zhang, Harry. The Optimality of Naive Bayes (PDF). FLAIRS2004 conference. http://www.cs.unb.ca/profs/hzhang/publications/FLAIRS04ZhangH.pdf
+
     """)
