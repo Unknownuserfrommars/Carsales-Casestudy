@@ -63,53 +63,52 @@ num_dict = {
 all_dict = num_dict.copy()
 all_dict.update(cat_dict)
 
+# def predictors_to_probabilities(
+#     df: pd.DataFrame,
+#     target_col: str = "sales_classification",
+#     epsilon: float = 1e-8,
+#     cat_suffix: str = "_prob",
+#     num_suffix: str = "_cdf",
+# ) -> tuple[pd.DataFrame, dict]:
+#     """
+#     Convert all predictor columns (exclude `target_col`) to probability-like values:
+#       - Categorical -> frequency (float in [0,1])
+#       - Numeric     -> Normal CDF fitted per column
 
-def predictors_to_probabilities(
-    df: pd.DataFrame,
-    target_col: str = "sales_classification",
-    epsilon: float = 1e-8,
-    cat_suffix: str = "_prob",
-    num_suffix: str = "_cdf",
-) -> tuple[pd.DataFrame, dict]:
-    """
-    Convert all predictor columns (exclude `target_col`) to probability-like values:
-      - Categorical -> frequency (float in [0,1])
-      - Numeric     -> Normal CDF fitted per column
+#     Returns (transformed_df, fitted_stats)
+#       fitted_stats = {
+#         "categorical": {col: {category: freq, ...}, ...},
+#         "numeric":     {col: {"mean": m, "std": s}, ...}
+#       }
+#     """
+#     if target_col not in df.columns:
+#         raise ValueError(f"target_col '{target_col}' not found in DataFrame")
 
-    Returns (transformed_df, fitted_stats)
-      fitted_stats = {
-        "categorical": {col: {category: freq, ...}, ...},
-        "numeric":     {col: {"mean": m, "std": s}, ...}
-      }
-    """
-    if target_col not in df.columns:
-        raise ValueError(f"target_col '{target_col}' not found in DataFrame")
+#     X = df.drop(columns=[target_col]).copy()
 
-    X = df.drop(columns=[target_col]).copy()
+#     # cat_cols, num_cols = [], []
+#     cat_cols = X.select_dtypes(include=['object']).columns
+#     num_cols = X.select_dtypes(include=np.number).columns
 
-    # cat_cols, num_cols = [], []
-    cat_cols = X.select_dtypes(include=['object']).columns
-    num_cols = X.select_dtypes(include=np.number).columns
+#     fitted = {"categorical": {}, "numeric": {}}
+#     out = pd.DataFrame(index=X.index)
 
-    fitted = {"categorical": {}, "numeric": {}}
-    out = pd.DataFrame(index=X.index)
+#     # Categoricals → frequency probabilities
+#     for col in cat_cols:
+#         freqs = X[col].value_counts(normalize=True, dropna=False).to_dict()
+#         fitted["categorical"][col] = freqs
+#         out[col + cat_suffix] = X[col].map(freqs).astype(float)
 
-    # Categoricals → frequency probabilities
-    for col in cat_cols:
-        freqs = X[col].value_counts(normalize=True, dropna=False).to_dict()
-        fitted["categorical"][col] = freqs
-        out[col + cat_suffix] = X[col].map(freqs).astype(float)
+#     # Numerics → Normal CDF
+#     for col in num_cols:
+#         m = float(np.mean(X[col].values))
+#         s = float(np.std(X[col].values, ddof=0))
+#         if s < epsilon:
+#             s = epsilon
+#         fitted["numeric"][col] = {"mean": m, "std": s}
+#         out[col + num_suffix] = stats.norm.cdf((X[col].values - m) / s)
 
-    # Numerics → Normal CDF
-    for col in num_cols:
-        m = float(np.mean(X[col].values))
-        s = float(np.std(X[col].values, ddof=0))
-        if s < epsilon:
-            s = epsilon
-        fitted["numeric"][col] = {"mean": m, "std": s}
-        out[col + num_suffix] = stats.norm.cdf((X[col].values - m) / s)
-
-    return out, fitted
+#     return out, fitted
 
 # x, _ = predictors_to_probabilities(bmw, target_col='sales_classification')
 # print(x.columns.str.endswith('_cdf'))
@@ -154,7 +153,7 @@ def custom_naive_bayes(df: pd.DataFrame, target: str) -> pd.DataFrame:
     # Step 3 - calculating the priors
     prior_high = len(df_high) / len(df)
     prior_low  = len(df_low)  / len(df)
-    
+    # st.write(prior_high, prior_low)
     # Step 4
     prob_high, prob_low = {}, {}
 
@@ -163,11 +162,11 @@ def custom_naive_bayes(df: pd.DataFrame, target: str) -> pd.DataFrame:
         if col in cat_vars:
             vals_high = df_high[col].value_counts(normalize=True)
             vals_low  = df_low[col].value_counts(normalize=True)
-            V = len(df[col].unique())
+            # V = len(df[col].unique())
             # high_dict[col] = (vals_high + 1) / (len(df_high) + V)
             # low_dict[col]  = (vals_low  + 1) / (len(df_low)  + V)
-            prob_high[col] = df[col].map(vals_high).fillna(1e-8).astype(float)
-            prob_low[col]  = df[col].map(vals_low).fillna(1e-8).astype(float)
+            prob_high[col] = df[col].map(vals_high).astype(float)
+            prob_low[col]  = df[col].map(vals_low).astype(float)
         elif col in num_vars:
             # vals_high[col] = (df_high[col].mean(), df_high[col].std(ddof=0))
             # vals_low[col] = (df_low[col].mean(),  df_low[col].std(ddof=0))
@@ -237,9 +236,9 @@ all_cols = list(num_dict.keys()) + list(cat_dict.keys())
 with st.sidebar:
     s = om(
         menu_title = 'The Great Navigation Pane of All Time',
-        options = ['Abstract', 'Background Information', 'Data Cleaning','Exploratory', 'Naive Bayes Prediction', 'Analysis', 'ph4', 'ph5', 'Conclusion', 'Bibliography'],
+        options = ['Abstract', 'Background Information', 'Data Cleaning','Exploratory', 'Naive Bayes Prediction', 'Analysis', 'Conclusion', 'Bibliography'],
         menu_icon = 'house-door-fill',
-        icons = ['person-arms-up', 'basket', 'filetype-csv', 'search', 'microsoft-teams', 'key-fill', 'trophy-fill', 'flag', 'star-fill', 'list-ol'],
+        icons = ['person-arms-up', 'basket', 'filetype-csv', 'search', 'microsoft-teams', 'key-fill', 'star-fill', 'list-ol'],
         default_index = 0,
         )
 # ----
@@ -257,29 +256,126 @@ if s == 'Abstract':
 
 if s == 'Background Information':
     st.title('Background Information')
-    st.text("This is a placeholder. Come back later for the real content.")
+    st.markdown("""
+    About this Dataset:
+    [Kaggle Link](https://www.kaggle.com/datasets/missionjee/car-sales-report)
+            
+<b>Background Info:</b>
+The automotive industry is a highly competitive, capital-intensive sector where accurate sales forecasting is not just beneficial—it's essential for survival and profitability. For a premium manufacturer like BMW, effective sales prediction impacts nearly every aspect of the business:
 
+Supply Chain & Production Planning: Prevents overproduction (which leads to costly inventory) or underproduction (which leads to lost sales and customer dissatisfaction).
 
+Inventory Management: Helps dealerships stock the right models, trims, and colors, improving turnover and reducing holding costs.
 
+Marketing & Advertising Allocation: Allows for targeted marketing campaigns by predicting which customer segments are most likely to buy certain models.
 
+Financial Planning & Strategy: Informs revenue projections, profit margins, and long-term strategic decisions, such as investments in electric vehicle (EV) technology.
 
+2. Why choose [BMW](https://en.wikipedia.org/wiki/BMW)? The Premium Car Market Dynamics
+BMW operates in the premium automotive segment, which has distinct characteristics that make sales prediction both challenging and interesting:
+
+Brand Value & Perception: Sales are heavily influenced by brand image, prestige, and perceived quality, factors that are qualitative and harder to quantify.
+
+Economic Sensitivity: Purchases of luxury goods are more sensitive to macroeconomic conditions (e.g., GDP growth, interest rates, consumer confidence) than the mass market.
+
+Product Lifecycle: BMW has a well-defined and publicized product lifecycle with frequent mid-cycle refreshes (LCI - Life Cycle Impulse) and all-new model generations. Sales often peak after a new launch and decline towards the end of the cycle.
+
+Diverse Product Portfolio: The range includes sedans (3 Series, 5 Series, 7 Series), SUVs (X1 to X7), and electric vehicles (i4, iX). Each segment responds differently to market forces.
+
+High Stakes of New Technology: The success of new technologies, especially in the electric (e.g., i-series) and autonomous driving domains, is critical for future growth.
+
+3. The Machine Learning Approach: Classification for Sales Prediction
+Instead of predicting a continuous number (a regression problem like "how many units will sell?"), framing this as a classification problem is highly practical for business strategy. We can define classes based on sales performance, for example:
+
+Class 1: Low Sales (e.g., sales below 6000)
+
+Class 2: High Sales (e.g., sales above 6000)
+
+This approach transforms the problem from a precise numerical forecast to a strategic risk-and-opportunity assessment, answering questions like: "Is this new model launch likely to be a blockbuster success or a slow seller?"
+""", unsafe_allow_html=True)
+    st.markdown("""
+Why Naive Bayes<sup>[5,6]</sup> is a Good Starting Point for this Project:
+
+Computational Efficiency: It is fast and requires less training data, making it excellent for prototyping and getting a baseline model quickly.
+
+Performs Well with Categorical Features: Automotive data often includes many categorical variables (Model Name, Body Type, Fuel Type, Transmission), which Naive Bayes handles naturally.
+
+Handles High-Dimensional Data: It can work with a dataset that has many features without a significant performance hit.
+
+Clear Probabilistic Output: It doesn't just give a classification; it provides a probability, offering a measure of confidence in the prediction (e.g., "80% chance of High Sales"). This is invaluable for business decision-making.""",
+unsafe_allow_html=True)
+    
+
+    
 
 if s == 'Data Cleaning':
     st.title('Data Cleaning')
-    st.text("This is a placeholder. Come back later for the real content.")
+    st.text("Here we clean the column names and organize the columns into categopry and numeric for later use.")
+    with st.expander("Click to see the code - Column cleaning"):
+        st.code("""
+bmw.columns = bmw.columns.str.lower().str.strip()
 
 
 
+# ------
+        
+
+cat_dict = {
+    "model":"Car Model",
+    "region":"Global Region",
+    "color":"Color",
+    "fuel_type":"Fuel Type",
+    "transmission":"Transmission",
+    "sales_classification":"Sales Volume Level",
+    }
+
+num_dict = {
+    "year":"Year",
+    "engine_size_l":"Engine Size (Liters)",
+    "mileage_km":"Milage (Km)",
+    "price_usd":"Price ($)",
+    "sales_volume":"Sales Count",
+    "car_age":"Car Age (Years)",
+    "mileage_per_year":"Mileage per Year (Km)",
+    "price_per_litre":"Price per Litre ($/L)",
+    "price_per_100km":"Price per 100 Km ($/100Km)",
+    }
+
+all_dict = num_dict.copy()
+all_dict.update(cat_dict)
+        """)
+    st.text("Here we define some columns based on existing columns for later data analysis.")
+    st.markdown("""
+- Car age: We create the car age by subtracting the car's manufactur year from 2025 (current year)
+- Mileage Per Year: We divide the total mileage by car age
+- Price per liter: We associate the car price with it's engine size
+- Price per 100km: We associate its price with its mileage""")
+    with st.expander("Click to see the code - Creating columns"):
+        st.code("""
 
 
+bmw['car_age'] = 2025 - bmw['year']
+            
+bmw['mileage_per_year'] = bmw['mileage_km'] / np.maximum(bmw['car_age'], 1)
+            
+bmw['price_per_litre'] = bmw['price_usd'] / bmw['engine_size_l']
+            
+bmw['price_per_100km'] = bmw['price_usd'] / (bmw['mileage_km']/100)
+            
+
+
+""", language="python")
+    st.text("This is our data cleaning code and function definitions.")
+
+    st.text("Here is a preview of the first few lines of the cleaned dataframe:")
+    st.dataframe(bmw.head(10))
 
 
 if s == 'Exploratory':
     st.title('Exploratory Data Analysis')
-    st.text("This is a placeholder. Come back later for the real content.")
     
     st.header("Exploring using Sales Volume Level")
-    st.subheader("Placeholder - Histogram 2 cat 1 num") # TODO: Placeholder, pls change
+    st.subheader("Exploratory of Sales Volume Level against Sales Count or Year")
     col1, col2 = st.columns([2,3])
     with st.form("Histogram 2 cat 1 num A"):
         fig1_cat = col1.selectbox("Select a category feature to display on the graph", np.setdiff1d(list(cat_dict.values()), "Sales Volume Level"), key=1)
@@ -307,7 +403,7 @@ if s == 'Exploratory':
         fig1_color = all_dict[fig1_color_d]
 
         if submitted:
-            fig1 = px.histogram(bmw, x=fig1_x_d, y=fig1_y_d, color=fig1_color_d, labels=all_dict, barmode='group', log_y=fig1_logy, histfunc='avg', title=f'Histogram of comparing {fig1_x} and {fig1_y} by {fig1_color}')
+            fig1 = px.histogram(bmw, x=fig1_x_d, y=fig1_y_d, color=fig1_color_d, labels=all_dict, barmode='group', log_y=fig1_logy, histfunc='avg', title=f'Histogram of comparing <b>{fig1_x}</b> and <b>{fig1_y}</b> by <b>{fig1_color}</b>')
             fig1.update_traces(marker_line_width=1)
             # if fig1_kde:
             #     kde = stats.gaussian_kde(bmw[fig1_y_d])
@@ -321,7 +417,7 @@ if s == 'Exploratory':
     st.markdown("<hr style=\"height: 5px; background-color: red;\" />", unsafe_allow_html=True)
 
     # st.header("Exploring using Car Model")
-    # st.subheader("Placeholder - Histogram 2 cat 1 num") # TODO: Placeholder, pls change
+    # st.subheader("Placeholder - Histogram 2 cat 1 num")
     # col3, col4 = st.columns([2,3])
     # with st.form("Histogram 2 cat 1 num B"):
     #     fig2_x = col3.selectbox("Select a category feature for the x-axis", np.setdiff1d(list(cat_dict.values()), "Car Model"), key=4)
@@ -346,7 +442,7 @@ if s == 'Exploratory':
     #     fig3_y_d = [key for key, value in num_dict.items() if value == fig3_y][0]
     #     fig3_logy = col5.checkbox("Click if you want log y scale", key=9)
     
-    st.header("Exploring of 1 cat 1 num + KDE/Norm lines") # Placeholder - TODO: Change
+    st.header("Exploratory graph with KDE Curve Line") # Placeholder - TODO: Change
     col7, col8 = st.columns([2,3])
     with st.form("Histogram 1 cat 1 num + KDE/Norm lines"):
         fig4_x = col7.selectbox("Select a numeric feature for the x-axis", np.setdiff1d(list(num_dict.values()), ["Sales Count", "Year"]), key=10)
@@ -364,7 +460,7 @@ if s == 'Exploratory':
 
         submitted = st.form_submit_button("Click to produce the histogram")
         if submitted:
-            fig4 = px.histogram(bmw, x=fig4_x_d, color='sales_classification', labels=all_dict, nbins=fig4_bins, histnorm="probability density", barmode='group', title=f'Histogram of {fig4_x}')  # TODO: Possible check for Color discrete map conflict w/ default. Can: use map assign one color to high; another color to low.
+            fig4 = px.histogram(bmw, x=fig4_x_d, color='sales_classification', labels=all_dict, nbins=fig4_bins, histnorm="probability density", barmode='group', title=f'Histogram of <b>{fig4_x}</b>')
             fig4.update_traces(marker_line_width=1)
             if fig4_kde:
                 kde = stats.gaussian_kde(bmw[fig4_x_d])
@@ -378,15 +474,15 @@ if s == 'Exploratory':
                 median = bmw[fig4_x_d].median()
                 annot_pos_mean = 'top left' if mean < median else 'bottom right'
                 annot_pos_median = 'top left' if not mean < median else 'bottom right'
-                fig4.add_vline(x=mean, line=dict(color='blue', width=2, dash='dash'), name='Mean', annotation_text=f'<b>Mean:<br>{mean:.2f}</b>', annotation_position=annot_pos_mean, annotation_font_color='blue', annotation_font_size=8) # TODO: Chooseable later, use hex color, always make sure the font color = line color TODO: Change color avoid conflict with default color map
-                fig4.add_vline(x=median, line=dict(color='orange', width=2, dash='dash'), name='Median', annotation_text=f'<b>Median:<br>{median:.2f}</b>', annotation_position=annot_pos_median, annotation_font_color='orange', annotation_font_size=8) # TODO: Chooseable later, use hex color, always make sure the font color = line color
+                fig4.add_vline(x=mean, line=dict(color='blue', width=2, dash='dash'), name='Mean', annotation_text=f'<b>Mean:<br>{mean:.2f}</b>', annotation_position=annot_pos_mean, annotation_font_color='blue', annotation_font_size=8) 
+                fig4.add_vline(x=median, line=dict(color='orange', width=2, dash='dash'), name='Median', annotation_text=f'<b>Median:<br>{median:.2f}</b>', annotation_position=annot_pos_median, annotation_font_color='orange', annotation_font_size=8)
             
             col8.plotly_chart(fig4)
     
     st.markdown("<hr style=\"height: 5px; background-color: red;\" />", unsafe_allow_html=True)
 
 
-    st.header("Exploring sunburst - 1 cat 1 num") # Placeholder - TODO: Change
+    st.header("Exploratory Sunburst Plot") # Placeholder - TODO: Change
     col9, col10 = st.columns([2,3])
     with st.form("Sunburst 1 cat 1 num"):
         fig5_cat = col9.selectbox("Select a category feature for the sunburst", np.setdiff1d(list(cat_dict.values()), "Sales Volume Level"), key=12)
@@ -407,7 +503,7 @@ if s == 'Exploratory':
         submitted = st.form_submit_button("Click to produce the sunburst")
         # if submitted:
         #     sbdf = bmw.copy()
-        #     sbdf[fig5_y_d] = sbdf.groupby(sb_path)[fig5_y_d].transform('mean') # TODO: Challenge: Change every for x: divide the mean on the number of items in the same group.
+        #     sbdf[fig5_y_d] = sbdf.groupby(sb_path)[fig5_y_d].transform('mean')
         #     fig5 = px.sunburst(bmw, path=sb_path, values=fig5_y_d, color='sales_classification', color_discrete_map={'High':'#ff6666', 'Medium':'#66ff66', 'Low':'#6666ff'}, labels=all_dict, title=f'Sunburst of {fig5_cat} and {fig5_y} by Sales Volume Level', height=800, width=800)
         #     col10.plotly_chart(fig5)
         if submitted:
@@ -418,7 +514,7 @@ if s == 'Exploratory':
             
             sbdf['_sb_value'] = means / counts
             fig5 = px.sunburst(
-                sbdf, path=sb_path, values='_sb_value', color='sales_classification', color_discrete_map={'High':'#ff6666', 'Medium':'#66ff66', 'Low':'#6666ff'}, labels=all_dict, title=f'Sunburst of {fig5_cat} and {fig5_y} by Sales Volume Level', height=800, width=800
+                sbdf, path=sb_path, values='_sb_value', color='sales_classification', color_discrete_map={'High':'#ff6666', 'Medium':'#66ff66', 'Low':'#6666ff'}, labels=all_dict, title=f'Sunburst of <b>{fig5_cat}</b> and <b>{fig5_y}</b> by Sales Volume Level', height=800, width=800
             )
             fig5.update_traces(textinfo=f'label+{fig5_percent_method}')
             col10.plotly_chart(fig5)
@@ -442,7 +538,7 @@ if s == 'Exploratory':
     #         fig6 = px.scatter(bmw, x=fig6_x_d, y=fig6_y_d, color='sales_classification', trendline=fig6_trendline, color_discrete_map={'High':'#ff6666', 'Medium':'#66ff66', 'Low':'#6666ff'}, labels=all_dict, title=f'Scatter plot of {fig6_x} and {fig6_y} by Sales Volume Level', hover_data=['model', 'region', 'year', 'engine_size_l', 'mileage_km', 'price_usd'])
     #         col12.plotly_chart(fig6)
 
-    st.header("Exploring line plot - hardcode x = year, 1 num as y, 2 traces of sales classification as color")
+    st.header("Exploratory line plot - Comparing year and Sales Volume Level")
     col11, col12 = st.columns([2,3])
     with st.form("Line plot year 1 num 2 traces"):
         fig6_y = col11.selectbox("Select a numeric feature for the y-axis", np.setdiff1d(list(num_dict.values()), ["Sales Count", "Year"]), key=14)
@@ -462,7 +558,7 @@ if s == 'Exploratory':
             col12.plotly_chart(fig6)
 
 
-    st.header("Histogram 2 num 1 cat") # Placeholder - TODO: Change
+    st.header("Exploratory Histogram Plot") # Placeholder - TODO: Change
     col13, col14 = st.columns([2,3])
     with st.form("Histogram 2 num 1 cat"):
         fig7_x = col13.selectbox("Select a numeric feature for the x-axis", np.setdiff1d(list(num_dict.values()), ["Sales Count", "Year"]), key=16)
@@ -485,7 +581,7 @@ if s == 'Exploratory':
             col14.plotly_chart(fig7)
 
 
-    st.header("Exploring box plot - 2 cat 1 num") # Placeholder - TODO: Change
+    st.header("Exploratory Box plot") # Placeholder - TODO: Change
     # User can select whether target var as x or color
     col15, col16 = st.columns([2,3])
     with st.form("Box plot 2 cat 1 num"):
@@ -516,7 +612,7 @@ if s == 'Exploratory':
             col16.plotly_chart(fig8)
 
     
-    st.header("Exploring heatmat of 2 num (px.imshow)") # Placeholder - TODO: Change
+    st.header("Exploratory of Heatmap") # Placeholder - TODO: Change
     col17, col18 = st.columns([2,3])    
     with st.form("Heatmap 2 num"):
         # fig9_x = col17.selectbox("Select a numeric feature for the x-axis", np.setdiff1d(list(num_dict.values()), ["Sales Count", "Year"]), key=23)
@@ -563,8 +659,17 @@ if s == 'Exploratory':
                 col18.plotly_chart(fig9)
 
 
+    st.markdown("<hr style=\"height: 5px; background-color: red;\" />", unsafe_allow_html=True)
+
+    st.markdown(
+    "<h1 style='text-align: center;'>Chi Square Tests</h1>",
+    unsafe_allow_html=True
+)
+
+    st.text("The first Chi-square test allows you to do feature selections on multiple categorical predictors against Sales Volume Level. This second Chi-square test allows you to select any two categorical variables from the dataset to see if they are independent of each other.")
+
     
-    st.header("Chi-sq")
+    st.subheader("Chi Square of Selected Categorical Predictors vs Sales Volume Level")
     col19, col20 = st.columns([2,3])
     with st.expander("See explanation on Chi-sq test"):
         st.text("""
@@ -606,7 +711,8 @@ if s == 'Exploratory':
     
 
 
-    st.header("Chi-sq 2")
+    st.subheader("Chi Square Comparison Between Any Two Categorical Variables")
+
     # col21, col22 = st.columns([2,3])
     with st.form("chi2-simple-form"):
         c1_pretty = st.selectbox("Categorical variable 1", cat_dict.values(), key="chi2_cat1")
@@ -632,7 +738,7 @@ if s == 'Exploratory':
             # )
             chi2_fmt = np.where(chi2 < 0.005, f"{chi2:.2e}", f"{chi2:.2f}")
             p_fmt = np.where(p < 0.0005, f"{p:.3e}", f"{p:.2f}")
-            result_df = pd.DataFrame({'Chi-square Value':[chi2_fmt], 'P-Value':[p_fmt]})  # TODO: FIgure out how to format these to maybe like .2f or .2e like it depends.
+            result_df = pd.DataFrame({'Chi-square Value':[chi2_fmt], 'P-Value':[p_fmt]})
             st.write(f"{c1_pretty} VS {c2_pretty}")
             st.dataframe(result_df)
 
@@ -640,7 +746,17 @@ if s == 'Exploratory':
 if s == 'Naive Bayes Prediction':
     st.title('Naive Bayes Prediction')
     st.text("In this section, we will perform a Naive Bayes classification to predict the 'Sales Volume Level' based on other features in the dataset.")
-    with st.expander("See brief info on Naive Bayes Classifier"):
+    with st.expander("See an explanation of how the Naive Bayes Classifier algorithm works:"):
+        st.text("""
+The Naive Bayes classifier is a simple but powerful method used to make predictions based on probabilities. It is most commonly applied in classification tasks, such as predicting whether car sales volume will be High or Low. The central idea is to use evidence, or features, to estimate how likely a set of conditions belongs to a particular sales category.
+
+The “Bayes” part of the name comes from Bayes' Theorem, a rule in probability that allows us to update our beliefs when we see new evidence. In a sales prediction example, the model asks: if a car is an SUV and the marketing spend is High, how likely is it that the sales volume will be High? It combines the likelihood of each individual feature with the overall chance that sales are high, producing a final probability for a specific set of car attributes.
+
+The “naive” part refers to an important assumption the model makes: that every piece of evidence, or feature, is independent of the others. For example, it assumes that the body type of the car (SUV, sedan, etc.) does not influence the color of the car or the marketing spend. While this assumption is often not true in real-world scenarios, it simplifies the calculations and surprisingly still leads to effective predictions.
+
+Because of its simplicity, Naive Bayes is extremely fast to train and works well even with relatively small datasets. It often serves as a reliable baseline model before using more complex algorithms. In essence, Naive Bayes acts like a very straightforward reasoning process for your project: it looks at each factor (body type, color, marketing spend, etc.), measures how strongly it points towards High or Low sales, and combines those pieces of evidence to make a final, probabilistic decision. """)
+        
+    with st.expander("Click to see my implementation of the Naive Bayes Classifier"):
         st.subheader("Custom Naive Bayes Classifier Implementation")
         st.text("The custom Naive Bayes classifier implemented here can handle both categorical and numerical features. It calculates prior probabilities and likelihoods based on the training data, and then makes predictions on the same dataset for demonstration purposes.")
         st.markdown("### Code Implementation")
@@ -682,7 +798,6 @@ if s == 'Naive Bayes Prediction':
             if col in cat_vars:
                 vals_high = df_high[col].value_counts(normalize=True)
                 vals_low  = df_low[col].value_counts(normalize=True)
-                V = len(df[col].unique())
                 prob_high[col] = df[col].map(vals_high).fillna(1e-8).astype(float)
                 prob_low[col]  = df[col].map(vals_low).fillna(1e-8).astype(float)
             elif col in num_vars:
@@ -802,21 +917,19 @@ if s == 'Naive Bayes Prediction':
     #         axis=1
     #     )
     #     return out, float(acc)
-    with st.expander("See information on the Naive Bayes Classifier:"):
-        st.text("""
-The Naive Bayes classifier is a simple but powerful method used to make predictions based on probabilities. It is most commonly applied in text classification tasks, such as detecting spam emails or identifying the sentiment of a review. The central idea is to use evidence, or features, to estimate how likely something belongs to a particular category.
+    
+    
+    # with st.expander("Introduction to NB Classifier Concepts (if you are a Newbie)"):
+        #     pass # Possible todo: Add more information here for newbies later if necessary
+        # Is the above information too technical? Should I make it more simpler to understand for a newbie? If yes uncomment the expander and add more content.
 
-The “Bayes” part of the name comes from Bayes' Theorem, a rule in probability that allows us to update our beliefs when we see new evidence. In a spam detection example, the model asks: if an email contains the word “free,” how likely is it that the email is spam? It combines the likelihood of each word with the overall chance that any email is spam, producing a final probability for whether a specific email is spam or not.
 
-The “naive” part refers to an important assumption the model makes: that every piece of evidence, or feature, is independent of the others. In other words, it assumes that the presence of one word in an email has nothing to do with another word. In reality, this is rarely true—words like “winner” and “prize” often appear together—but even with this oversimplified assumption, the method tends to perform surprisingly well.
-
-Because of its simplicity, Naive Bayes is extremely fast to train and works well even with relatively small datasets. It often serves as a reliable baseline model before using more complex algorithms. In essence, Naive Bayes acts like a very straightforward reasoning process: it looks at each clue, measures how strongly it supports one category over another, and combines those pieces of evidence to make a final, probabilistic decision.
-                """)
     st.header("Accuracy test")
+    st.text("This section allows you to select predictors to see how well they predict the 'Sales Volume Level' (High/Low) using the custom Naive Bayes classifier we implemented earlier.")
     with st.form("Accuracy"):
         # --- multiselects show PRETTY names ---
         # exclude the target's pretty name ("Sales Volume Level") from categorical options
-        all_pretty_opts = np.setdiff1d(list(all_dict.values()), ['Sales Volume Level'])
+        all_pretty_opts = np.setdiff1d(list(all_dict.values()), ['Sales Volume Level', 'Sales Count'])
         all_ms = st.multiselect("Predictors", all_pretty_opts, key=4001)
 
         # PRETTY -> DIRTY using your list-comprehension style
@@ -826,10 +939,8 @@ Because of its simplicity, Naive Bayes is extremely fast to train and works well
 
         if submitted:
             output, accuracy = custom_naive_bayes(bmw[preds + ['sales_classification']], target='sales_classification')
-            output_clean = output.copy()
-            # TODO: Change the prob_high and prob_low column values to .2e or .3e (depends) and do it in one line of code using .map and the lambda function.
-            # TODO: Make the column names to more user-friendly names so that they are more nicer like the prediction and actual. for probs dont do abbreviations
             st.dataframe(output, use_container_width=True)
+            st.dataframe(output[output['predicted'] == 'High'])
             st.write(f"The accuracy of this prediction is: {accuracy:.3f}")
             # if len(predictors) == 0:
             #     st.warning("Select at least one predictor.")
@@ -890,37 +1001,61 @@ Because of its simplicity, Naive Bayes is extremely fast to train and works well
             #     else:
             #         st.info("No numeric predictors selected.")
 
-    with st.expander("View the function"):
-        # st.code(fit_distribution, language='python')
-        # st.code(profit_predict, language='python')
-        st.text("No actual information yet. Still under construction. Come back later for more information.")
+    # with st.expander("View the function"):
+    #     # st.code(fit_distribution, language='python')
+    #     # st.code(profit_predict, language='python')
+    #     st.text("No actual information yet. Still under construction. Come back later for more information.")
 
 if s == "Analysis":
     st.header("The analysis Section")
+    st.text("Information about the NB model and its baseline (don't worry we'll get these words covered)")
+    st.text(
+    "Naive Bayes is used as a simple and transparent baseline model that allows "
+    "us to test whether the available features contain meaningful predictive "
+    "information. In this dataset, approximately 70% of observations fall into "
+    "the low sales category and 30% into the high sales category. As a result, a "
+    "naive model that predicts 'low sales' for every case would already achieve "
+    "70% accuracy without using any predictors at all."
+)
+    st.text(
+    "Because of this class imbalance, accuracy values near 70% do not indicate "
+    "strong model performance. A useful predictive model should exceed this "
+    "baseline by a clear margin. Accuracy only slightly above 70% suggests that "
+    "the model is learning very little beyond the dominant class distribution."
+)
 
     # Here I will write the overall purpose for this analysis section as well as "the general overview of how these results will guide me in feature selection for the NB Classifier"
-    st.text("These analysis plots (Chi-square tests and heatmaps) can let me know about the correlation between the different columns and know what features to and not to select (to avoid some being over-correlated) for my feature selection.")
+    st.text("""This set of box plots is used to compare how numeric features differ between cars with different sales volume levels (for example, low vs high sales).
+
+Each small chart focuses on one numeric feature, allowing us to see whether that feature tends to have clearly different values for different sales groups.""")
+
 
     mileage_feats = pd.Series(["mileage_km", "mileage_per_year", "price_per_100km"]).replace(all_dict).apply(lambda text:"<b>"+text+"</b>")
-    st.subheader("Facet")
+    st.subheader("Facet Analysis of Numeric Predictors vs Sales Volume Level")
     bmw_melted = bmw.melt(
         id_vars='sales_classification',
         value_vars=list(num_dict.keys()),
-        var_name='Features'
+        var_name='Features',
     )
     bmw_melted['Features'] = bmw_melted['Features'].replace(all_dict).apply(lambda text:"<b>"+text+"</b>")
-    figure_mf = px.box(bmw_melted[bmw_melted['Features'].isin(mileage_feats)], 'sales_classification', 'value', facet_col='Features', title='Mileage features by Sales Volume Level', color='sales_classification', height=600, facet_col_spacing=0.05, labels=all_dict, log_y=True)
+    figure_mf = px.box(bmw_melted[bmw_melted['Features'].isin(mileage_feats)], 'sales_classification', 'value', facet_col='Features', title='Mileage features by Sales Volume Level', color='sales_classification', height=400, width = 500, facet_col_spacing=0.05, labels=all_dict, log_y=True)
     figure_mf.update_yaxes(dtick=1)
     figure_mf.for_each_annotation(lambda x:x.update(text=x.text.split("=")[-1]))
     st.plotly_chart(figure_mf, use_container_width=True)
 
-    figure_nu = px.box(bmw_melted[~bmw_melted['Features'].isin(mileage_feats)], 'sales_classification', 'value', facet_col='Features', title='Other Numeric features by Sales Volume Level', color='sales_classification', height=600, facet_col_spacing=0.06, labels=all_dict, facet_col_wrap=3, facet_row_spacing=0.09)
+    figure_nu = px.box(bmw_melted[~bmw_melted['Features'].isin(mileage_feats)], 'sales_classification', 'value', facet_col='Features', title='Other Numeric features by Sales Volume Level', color='sales_classification', height=500, width=600, facet_col_spacing=0.06, labels=all_dict, facet_col_wrap=3, facet_row_spacing=0.09)
     figure_nu.update_yaxes(showticklabels=True, matches=None)
     figure_nu.for_each_annotation(lambda x:x.update(text=f"<b>{x.text.split('=')[-1]}</b>", font=dict(size=14, color="black", family="Arial")))
     st.plotly_chart(figure_nu)
+    st.text("The facet plots above shows which numeric predictors might be strong candidates for feature selections in the Naive Bayes Classifier.")
+    st.text("""These plots indicate that the numeric predictors are extremely weak. 
+Across almost all features, the median and average values for different 
+sales volume groups are nearly the same. Because the typical values do not meaningfully differ between high- and low-selling cars, 
+these features do not provide clear signals that help distinguish sales performance."""
+)
 
-
-    st.subheader("Chi-sq") # TODO: Add all columns to the chi-sqm similar to the "chisq" exploratory graph but you choose all
+    st.text("The analysis graph below shows the chi-square value and p-value of the predictors against the target variable 'Sales Volume Level'. A higher chi-square value indicates a stronger association between the predictor and the target variable. A lower p-value (typically less than 0.05) suggests that the association is statistically significant.")
+    st.subheader("Chi-square test")
     # with st.form("Chi-sq"):
     #         predictor = col19.multiselect("Select some categorical predictors", np.setdiff1d(list(cat_dict.values()), ["Sales Volume Level"]), default=["Car Model", "Color"], key=26)
     #         target = "Sales Volume Level"
@@ -968,15 +1103,80 @@ if s == "Analysis":
     chi2_df = pd.DataFrame(chi2_re).sort_values(by='Chi2 Stats', ascending=False)
     chi2_df['Chi2 Stats'] = chi2_df['Chi2 Stats'].apply(lambda x: np.where(x < 0.005, f"{x:.2e}", f"{x:.2f}"))
     chi2_df['p_value'] = chi2_df['p_value'].apply(lambda x:np.where(x < 0.0005, f"{x:.3e}", f"{x:.2f}"))
-    st.dataframe(chi2_df, use_container_width=True)
+    col21, col22 = st.columns([2,3])
+    col21.dataframe(chi2_df, use_container_width=True)
     fig_chi2_a = px.bar(chi2_df, x='Predictor', y='Chi2 Stats', title='', labels={'Chi2 Statistic': 'Chi-squared Statistic', 'Predictor': 'Categorical Predictor'}, hover_data={'p_value': ':.4e', 'Degrees of Freedom': True}, text_auto='.1f')
-    st.plotly_chart(fig_chi2_a)
+    col22.plotly_chart(fig_chi2_a)
+
+    st.text("The plot above shows that all category variables have relatively large p-values thus not being very likely to correlate with each other. However, the Color and Global Region variables are the strongest of the five.")
 
 
-    st.subheader("Heatmap of numeric cols corr.") # TODO: Use px.imshow()
-    st.text("This heatmap shows the correlation between the numeric columns so that it prepares us for the later feature selection.")
+    st.subheader("Heatmap of numeric cols correlation")
+    st.text("""
+    This heatmap shows how numeric features relate to each other, not to sales directly.
+
+It is mainly used to:
+
+- Detect redundant features
+
+- Prepare for feature selection
+
+- Avoid using multiple variables that capture the same information""")
     corr_matrix = bmw[np.setdiff1d(list(num_dict.keys()), ['year'])].corr()
     heatmap = px.imshow(corr_matrix, text_auto='.4f', aspect='auto', color_continuous_scale='RdBu', title='Correlation Heatmap', labels={'x':'Features', 'y':'Features', 'color':'Correlation'})
     st.plotly_chart(heatmap)
 
+
+    st.subheader("Information on the Naive Bayes Classifier")
+    st.text("Due to the strong imbalance in the dataset (70% Low vs. 30% High), the Naive Bayes classifier became biased toward the majority class. As a result, it collapsed into a degenerate solution that predicts only the majority label, providing misleadingly high accuracy but very poor recall for the minority class.")
+    st.text("Most of the times, choices will result in a ~70% accuracy with the model predicting all highs but occasionally it will produce all lows resulting in a ~30% accuracy. This behavior highlights the limitations of using accuracy as the sole metric for evaluating model performance, especially in imbalanced datasets.")
+
     # Show all the steps (each collection of features) and the reason for choosing that particular set of features and the results. EG: Include one of using all the features because none of them are highly correlated but there are also no individually strong predictors.
+    # TODO: Remember all iterations (.docx / .txt) of feature selections and the reason why
+    st.subheader("Feature Selection Iterations and Results")
+    st.text(
+    "In the first case scenario, we select predictors that describe the basic "
+    "characteristics of the car and its market context. These include Car Model, "
+    "Global Region, Fuel Type, and Transmission. Together, these variables represent "
+    "what the car is, where it is sold, and how it is powered and operated. Although "
+    "the earlier visual analysis shows that these features do not strongly separate "
+    "sales volume levels, they are reasonable factors that could influence consumer "
+    "preference and market availability."
+)
+
+    st.text(
+    "In the second case scenario, we focus on predictors related to vehicle usage "
+    "and ownership cost. These include Car Age (Years), Mileage per Year (Km), "
+    "Price ($), Engine Size (Liters), and Price per 100 Km ($/100Km). This set of "
+    "features reflects how intensively a vehicle is used and how expensive it is "
+    "to own and operate. While these variables do not show strong statistical "
+    "separation between sales groups, they represent logical considerations that "
+    "may influence purchasing behavior over time."
+)
+
+
+if s == "Conclusion":
+    st.header("Conclusion")
+    st.subheader("Why my model didn't do a great job?") # TODO: Add more content here later.
+    # Doing poorly becasue of bad feature selections
+    st.text(
+    "The automated feature selection methods did not perform well in this analysis. "
+    "This failure is not due to limitations of the Naive Bayes classifier itself, "
+    "but rather reflects the quality and structure of the dataset. Earlier visual "
+    "analysis showed that both numeric and categorical predictors exhibit heavy "
+    "overlap between sales volume levels, meaning that no small subset of features "
+    "contains a strong or consistent predictive signal."
+)
+
+
+if s == "Bibliography":
+    st.header("Bibliography")
+    st.text("1. BMW Car Sales Dataset: [Kaggle Dataset](https://www.kaggle.com/datasets/danielwillgeorge/bmw-car-sales-dataset)\n2. Plotly Express Documentation: [Plotly Express](https://plotly.com/python/plotly-express/)\n3. SciPy Stats Documentation: [SciPy Stats](https://docs.scipy.org/doc/scipy/reference/stats.html)\n4. Streamlit Documentation: [Streamlit](https://docs.streamlit.io/)")
+    st.text("""
+    Some Additional scientific research on the Naive Bayes parameter that is mentioned in the introduction part:
+    5.Hand, D. J.; Yu, K. (2001). "Idiot's Bayes — not so stupid after all?". International Statistical Review. 69 (3): 385–399. https://www.jstor.org/stable/1403452?origin=crossref
+    6.McCallum, Andrew. "Graphical Models, Lecture2: Bayesian Network Representation" https://people.cs.umass.edu/~mccallum/courses/gm2011/02-bn-rep.pdf
+            
+    And one more:
+    Zhang, Harry. The Optimality of Naive Bayes (PDF). FLAIRS2004 conference. http://www.cs.unb.ca/profs/hzhang/publications/FLAIRS04ZhangH.pdf
+    """)
