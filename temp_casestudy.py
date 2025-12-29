@@ -235,8 +235,8 @@ all_cols = list(num_dict.keys()) + list(cat_dict.keys())
 # ---- 
 with st.sidebar:
     s = om(
-        menu_title = 'The Great Navigation Pane of All Time',
-        options = ['Abstract', 'Background Information', 'Data Cleaning','Exploratory', 'Naive Bayes Prediction', 'Analysis', 'Conclusion', 'Bibliography'],
+        menu_title = 'THE Navigation Pane',
+        options = ['Abstract', 'Background Information', 'Data Cleaning','Exploratory Section', 'Naive Bayes Prediction', 'Analysis Section', 'Conclusion', 'Bibliography'],
         menu_icon = 'house-door-fill',
         icons = ['person-arms-up', 'basket', 'filetype-csv', 'search', 'microsoft-teams', 'key-fill', 'star-fill', 'list-ol'],
         default_index = 0,
@@ -248,8 +248,8 @@ with st.sidebar:
 # f.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode='lines', line=dict(color='black', width=2)))
 
 if s == 'Abstract':
-    st.title('The Great Navigation Pane of All Time')
-    st.text("This is a placeholder. Come back later for the real content.")
+    st.title('Abstract')
+    st.text("This case study uses Naive Bayes model to predict BMW car sales. Click on the navigation bar for more!")
 
 
 
@@ -1181,3 +1181,4 @@ if s == "Bibliography":
     Zhang, Harry. The Optimality of Naive Bayes (PDF). FLAIRS2004 conference. http://www.cs.unb.ca/profs/hzhang/publications/FLAIRS04ZhangH.pdf
 
     """)
+
