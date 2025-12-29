@@ -371,7 +371,7 @@ bmw['price_per_100km'] = bmw['price_usd'] / (bmw['mileage_km']/100)
     st.dataframe(bmw.head(10))
 
 
-if s == 'Exploratory':
+if s == 'Exploratory Section' or s == "Exploratory":
     st.title('Exploratory Data Analysis')
     
     st.header("Exploring using Sales Volume Level")
@@ -1006,7 +1006,7 @@ Because of its simplicity, Naive Bayes is extremely fast to train and works well
     #     # st.code(profit_predict, language='python')
     #     st.text("No actual information yet. Still under construction. Come back later for more information.")
 
-if s == "Analysis":
+if s == "Analysis Section" or s == "Analysis":
     st.header("The analysis Section")
     st.text("Information about the NB model and its baseline (don't worry we'll get these words covered)")
     st.text(
@@ -1181,4 +1181,5 @@ if s == "Bibliography":
     Zhang, Harry. The Optimality of Naive Bayes (PDF). FLAIRS2004 conference. http://www.cs.unb.ca/profs/hzhang/publications/FLAIRS04ZhangH.pdf
 
     """)
+
 
