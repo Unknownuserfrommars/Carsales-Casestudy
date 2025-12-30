@@ -258,7 +258,7 @@ if s == 'Background Information':
     st.title('Background Information')
     st.markdown("""
     About this Dataset:
-    [Kaggle Link](https://www.kaggle.com/datasets/missionjee/car-sales-report)
+    [Kaggle Link](https://www.kaggle.com/datasets/junaid512/bmw-car-sales-classification-dataset)
             
 <b>Background Info:</b>
 The automotive industry is a highly competitive, capital-intensive sector where accurate sales forecasting is not just beneficial—it's essential for survival and profitability. For a premium manufacturer like BMW, effective sales prediction impacts nearly every aspect of the business:
@@ -1171,7 +1171,7 @@ if s == "Conclusion":
 
 if s == "Bibliography":
     st.header("Bibliography")
-    st.text("1. BMW Car Sales Dataset: [Kaggle Dataset](https://www.kaggle.com/datasets/danielwillgeorge/bmw-car-sales-dataset)\n2. Plotly Express Documentation: [Plotly Express](https://plotly.com/python/plotly-express/)\n3. SciPy Stats Documentation: [SciPy Stats](https://docs.scipy.org/doc/scipy/reference/stats.html)\n4. Streamlit Documentation: [Streamlit](https://docs.streamlit.io/)")
+    st.text("1. BMW Car Sales Dataset: [Kaggle Dataset](https://www.kaggle.com/datasets/junaid512/bmw-car-sales-classification-dataset)\n2. Plotly Express Documentation: [Plotly Express](https://plotly.com/python/plotly-express/)\n3. SciPy Stats Documentation: [SciPy Stats](https://docs.scipy.org/doc/scipy/reference/stats.html)\n4. Streamlit Documentation: [Streamlit](https://docs.streamlit.io/)")
     st.text("""
     Some Additional scientific research on the Naive Bayes parameter that is mentioned in the introduction part:
     5.Hand, D. J.; Yu, K. (2001). "Idiot's Bayes — not so stupid after all?". International Statistical Review. 69 (3): 385–399. https://www.jstor.org/stable/1403452?origin=crossref
@@ -1181,5 +1181,6 @@ if s == "Bibliography":
     Zhang, Harry. The Optimality of Naive Bayes (PDF). FLAIRS2004 conference. http://www.cs.unb.ca/profs/hzhang/publications/FLAIRS04ZhangH.pdf
 
     """)
+
 
 
